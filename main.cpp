@@ -4,9 +4,12 @@
 #include <map>
 #include <iterator>
 #include <functional>
+#include <iostream>
 class Node
 {
     private:
+    friend class Tree;
+    friend class HufmanTree;
     unsigned int frequence;
     char sym;
     Node* right;
@@ -26,6 +29,12 @@ class Node
         right = nullptr;
         left = nullptr;
     }
+    void swapChildren()
+    {
+        Node* temp = this -> right;
+        this -> right = this -> left;
+        this -> left = temp;
+    }
     void newChild(Node* child)
     {
         if(this -> left == nullptr )
@@ -41,6 +50,23 @@ class Node
                 }
         }
         frequence += child -> frequence;    
+    }
+    void newNode(Node* child)
+    {
+        if(this -> left != nullptr)
+        {
+        Node* temp = this -> left;
+        this -> left = new Node('-', temp -> getFreq() + 1);
+        this -> left -> left = temp;
+        this -> left -> right = child;
+        }
+        else
+        {
+        this -> left = new Node('=',0);
+        this -> right = child;
+        this -> sym = '-';
+        this -> frequence = 1;
+        }
     }
     unsigned int getFreq ()
     {
@@ -58,16 +84,36 @@ class Node
     {
         return sym;
     }
+    void incFreq()
+    {
+        frequence++;
+    }
 };
+
+std::string int_2_bin( const char &n )
+{
+std::string bin_str = "";
+int L = 8*sizeof(n);
+
+for (int r = L - 1; r >= 0;--r)
+{
+if ( ( n & ( 1 << r ) ) >> r ) 
+bin_str += '1';
+else 
+bin_str += '0';
+}
+return bin_str;
+}
 
 class Tree
 {
     private:
     Node* root;
+    friend class HufmanTree;
     public:
     Tree ()
     {
-        root = new Node();
+        root = new Node('=', 0);
     }
     Tree (Node* root)
     {
@@ -91,63 +137,100 @@ class HufmanTree
 {
     private:
     std::string mes;
-    Tree hufmantree;
+    std::string res;
+    Tree* hufmantree;
     std::map <char, unsigned int> freqtable;
     std::map <char, std::string> codetable;
     public:
-    HufmanTree(std::string encoding)
+    HufmanTree(std::string a)
     {
-        this -> mes = encoding;
-        fillFreqTable();
-        createHuffman();
-        std::string temp = "";
-        fillCodeTable(temp, hufmantree.getRoot());
-        int a =2+2;
-    } 
-    void fillFreqTable()
+        mes = a;
+        hufmantree = new Tree();
+      //  temp2 = temp -> rightCh();
+        //temp2 =  new Node('\eof', 1);
+    }
+
+    void handleData()
     {
         for(size_t i = 0; i < mes.size(); i++)
         {
-            freqtable[mes[i]]++;
+            char token = mes[i];
+            if(codetable[token] == "")
+            {
+                if(i != 0)
+                res += codetable['='];
+                unsigned int sym = token;
+                res += int_2_bin(sym);
+                insertSym(hufmantree -> getRoot(), token);
+                updateTree(&(hufmantree -> root));
+                std::string temp = "";
+                fillCodeTable(temp, hufmantree -> getRoot());
+            }
+            else
+            {
+                std::string code = codetable[token];
+                res += codetable[token];
+                Node* temproot = hufmantree -> getRoot();
+                for(size_t i = 0; i < code.size(); i++)
+                {
+                    temproot -> incFreq();
+                    if(code[i] == '0')
+                    {
+                        temproot = temproot -> leftCh();
+                    }
+                    if(code[i] == '1')
+                    {
+                        temproot = temproot -> rightCh();
+                    }
+                }
+                temproot -> incFreq();
+                updateTree(&(hufmantree -> root));
+                std::string temp = "";
+                fillCodeTable(temp, hufmantree -> getRoot());
+            }
+            int a = 2*2;
         }
+        std::cout << res;
     }
-    Tree createHuffman()
+    void updateTree(Node** root)
     {
-        //std:EEE:priority_queue<Tree*> pq;
-        std::priority_queue<Tree*, std::vector<Tree*>, std::function<bool(Tree*, Tree*)>> pq(Compare);
-        std::map <char, unsigned int>::iterator it;
-        for(it = freqtable.begin(); it != freqtable.end();++it)
+        if((*root) -> leftCh() != nullptr)
         {
-            char b = it -> first;
+            updateTree(&((*root)-> left));
+        }
 
-            Node* temp = new Node(it -> first, it -> second);
-            Tree* obj = new Tree(temp);
-           pq.emplace(obj);
-        }
-        while(pq.size() > 1)
+        if((*root) -> rightCh() != nullptr)
         {
-            Tree* temp1 = pq.top();
-            pq.pop();
-            Tree* temp2 = pq.top();
-            pq.pop();
-            Tree* res = new Tree();
-            (res -> getRoot()) -> newChild(temp1 -> getRoot());
-            (res -> getRoot()) -> newChild(temp2 -> getRoot());
-          //  delete temp1;
-           // delete temp2;
-            //(*(temp2 -> getRoot())).newChild(temp1 -> getRoot());
-           // pq.push(res);
-            pq.emplace(res);
+            updateTree(&((*root)-> right));
         }
-        hufmantree = *(pq.top());
+
+        if((*root) -> leftCh() != nullptr && (*root) -> rightCh() != nullptr)
+        {
+            if((*root) -> leftCh() -> getFreq() > (*root) -> rightCh() -> getFreq())
+            {
+                (*root) -> swapChildren();
+            }
+        }
     }
 
-    void fillCodeTable(std::string code, Node* root)
+    void insertSym(Node* root, char token)
+    {
+        while(root -> leftCh() != nullptr && root -> leftCh() -> getFreq() > 1)
+        {
+            root -> incFreq();
+            root = root -> leftCh();
+        }
+        root -> incFreq();
+        Node* temp = new Node(token, 1);
+        root -> newNode(temp);
+    }
+
+       void fillCodeTable(std::string code, Node* root)
     {
         if(root -> leftCh() != nullptr)
         {
            // code.push_back('0');
-            fillCodeTable(code+'0', root -> leftCh());
+            fillCodeTable(code + '0', root -> leftCh());
         }
         if(root -> rightCh() != nullptr)
         {
@@ -163,6 +246,8 @@ class HufmanTree
 
 int main()
 {
-    HufmanTree a("beep boop beer!");
-    a.createHuffman();
+    std::string a = "aardvark";
+    HufmanTree b(a);
+    b.handleData();
+    int c = 2*2;
 }
