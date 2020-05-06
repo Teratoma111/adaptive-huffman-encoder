@@ -7,6 +7,7 @@
 #include <iostream>
 #include <stdio.h>
 #include <fstream>
+#define systemchar '|'
 class Node
 {
     private:
@@ -64,7 +65,7 @@ class Node
         }
         else
         {
-        this -> left = new Node('=',0);
+        this -> left = new Node(systemchar,0);
         this -> right = child;
         this -> sym = '-';
         this -> frequence = 1;
@@ -132,7 +133,7 @@ class Tree
     public:
     Tree ()
     {
-        root = new Node('=', 0);
+        root = new Node(systemchar, 0);
     }
     ~Tree()
     {
@@ -246,7 +247,7 @@ class HufmanTree
                 }
             }
             char token = temp -> getSym();
-            if(token == '=')
+            if(token == systemchar)
             {
             std::string aS;
             for(unsigned int j = 0; j < 8; j++)
@@ -296,7 +297,7 @@ class HufmanTree
             if(codetable[token] == "")
             {
                 if(i != 0)
-                res += codetable['='];
+                res += codetable[systemchar];
                 unsigned int sym = token;
                 res += int_2_bin(sym);
                 insertSym(hufmantree -> getRoot(), token);
@@ -383,7 +384,7 @@ class HufmanTree
 
 int main()
 {
-    std::string a = "", con = "";
+    std::string a = "", con = ""    ;
     std::ifstream fin("gamlet.txt"); 
     std::string buff;
     while(fin >> buff)
