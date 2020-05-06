@@ -5,6 +5,8 @@
 #include <iterator>
 #include <functional>
 #include <iostream>
+#include <stdio.h>
+#include <fstream>
 class Node
 {
     private:
@@ -90,6 +92,23 @@ class Node
     }
 };
 
+char bin_2_int(const std::string &str )
+{
+unsigned int number = 0;
+int lshift = 0;
+int L = str.size();
+for ( int i = L - 1; i >= 0; --i)
+{
+if ( str[i] == '1' ) number += ( 1 << lshift );
+else if ( str[i] != '0')
+{
+std::cout << "wrong string ";
+return 0;
+}
+++lshift;
+}
+return number;
+}
 std::string int_2_bin( const char &n )
 {
 std::string bin_str = "";
@@ -115,6 +134,25 @@ class Tree
     {
         root = new Node('=', 0);
     }
+    ~Tree()
+    {
+        delete root;
+    }
+    void deleteTree(Node* trueRoot)
+    {
+        if(trueRoot -> leftCh() != nullptr)
+        {
+           deleteTree(trueRoot -> leftCh());
+        }
+        if(trueRoot -> rightCh() != nullptr)
+        {
+           deleteTree(trueRoot -> rightCh());
+        }
+         if(trueRoot -> leftCh() == nullptr && trueRoot -> rightCh() == nullptr)
+        {
+            delete trueRoot;
+        }
+    }
     Tree (Node* root)
     {
         this -> root = root;
@@ -139,7 +177,7 @@ class HufmanTree
     std::string mes;
     std::string res;
     Tree* hufmantree;
-    std::map <char, unsigned int> freqtable;
+    //std::map <char, unsigned int> freqtable;
     std::map <char, std::string> codetable;
     public:
     HufmanTree(std::string a)
@@ -149,8 +187,108 @@ class HufmanTree
       //  temp2 = temp -> rightCh();
         //temp2 =  new Node('\eof', 1);
     }
+    ~HufmanTree()
+    {
+        delete hufmantree;
+    }
+    HufmanTree()
+    {
+        mes = "";
+        hufmantree = new Tree();
+      //  temp2 = temp -> rightCh();
+        //temp2 =  new Node('\eof', 1);
+    }
+    std::string binString()
+    {
+        std::string bins = "";
+        for(size_t i = 0; i < mes.size(); i++)
+        {
+            bins+=(int_2_bin(mes[i]));
+        }
+        return bins;
+    }
+    void putNewWord(std::string word)
+    {
+        mes+=word;
+    }
+    std::string decode()
+    {
+        std::string a;
+        for(unsigned int k = 0; k < 8; k++)
+        {
+            a.push_back(mes[k]);
+        }
+        char firstsym = bin_2_int(a);
+        insertSym(hufmantree -> getRoot(),firstsym);
+        res+=firstsym;
+        updateTree(&(hufmantree -> root));
+        std::string temps = "";
+        fillCodeTable(temps, hufmantree -> getRoot());
+       for(size_t i = 9; i < mes.size(); i++)
+        {
+            i--;
+            std::string code = "";
+            Node* temp = hufmantree -> getRoot();
+            while(temp -> rightCh() != nullptr && temp -> leftCh() != nullptr)
+            {
+                if(mes[i] == '0')
+                {
+                    temp = temp -> leftCh();
+                    i++;
+                    code.push_back('0');
+                    //continue;
+                }
+                else
+                {
+                    temp = temp -> rightCh();
+                    i++;
+                    code.push_back('1');
+                }
+            }
+            char token = temp -> getSym();
+            if(token == '=')
+            {
+            std::string aS;
+            for(unsigned int j = 0; j < 8; j++)
+            {
+            aS.push_back(mes[i]);
+            i++;
+            }
+            char NewSym = bin_2_int(aS);
+            insertSym(hufmantree -> getRoot(),NewSym);
+            res += NewSym;
+            updateTree(&(hufmantree -> root));
+            std::string temps = "";
+            fillCodeTable(temps, hufmantree -> getRoot());
+            }
+            else
+            {
+                res += token;
+                Node* temproot = hufmantree -> getRoot();
+                for(size_t p = 0; p < code.size(); p++)
+                {
+                    temproot -> incFreq();
+                    if(code[p] == '0')
+                    {
+                        temproot = temproot -> leftCh();
+                    }
+                    if(code[p] == '1')
+                    {
+                        temproot = temproot -> rightCh();
+                    }
+                }
+                //temproot -> incFreq();
+                updateTree(&(hufmantree -> root));
+                std::string temp = "";
+                fillCodeTable(temp, hufmantree -> getRoot());
+            }
 
-    void handleData()
+        }
+        hufmantree -> deleteTree(hufmantree -> getRoot());
+        //delete hufmantree;
+        return res;
+    }
+    std::string handleData()
     {
         for(size_t i = 0; i < mes.size(); i++)
         {
@@ -178,19 +316,20 @@ class HufmanTree
                     {
                         temproot = temproot -> leftCh();
                     }
-                    if(code[i] == '1')
+                    else
                     {
                         temproot = temproot -> rightCh();
                     }
                 }
-                temproot -> incFreq();
+                //temproot -> incFreq();
                 updateTree(&(hufmantree -> root));
                 std::string temp = "";
                 fillCodeTable(temp, hufmantree -> getRoot());
             }
-            int a = 2*2;
         }
-        std::cout << res;
+        hufmantree -> deleteTree(hufmantree -> getRoot());
+        //delete hufmantree;
+        return res;
     }
     void updateTree(Node** root)
     {
@@ -229,12 +368,10 @@ class HufmanTree
     {
         if(root -> leftCh() != nullptr)
         {
-           // code.push_back('0');
             fillCodeTable(code + '0', root -> leftCh());
         }
         if(root -> rightCh() != nullptr)
         {
-           // code.push_back('1');
             fillCodeTable(code + '1', root -> rightCh());
         }
          if(root -> leftCh() == nullptr && root -> rightCh() == nullptr)
@@ -246,8 +383,23 @@ class HufmanTree
 
 int main()
 {
-    std::string a = "aardvark";
+    std::string a = "", con = "";
+    std::ifstream fin("gamlet.txt"); 
+    std::string buff;
+    while(fin >> buff)
+    {
+        a +=buff;
+        a +=' ';
+    }
     HufmanTree b(a);
-    b.handleData();
-    int c = 2*2;
+    std::string data = b.binString();
+    double size1 = data.size();
+    //std::cout << b.binString() << std::endl;
+    con = b.handleData();
+    size1 /= con.size();
+    std::cout << size1 << std:: endl;
+    //std::cout << con << std::endl;
+    HufmanTree decode(con);
+    std::cout << decode.decode() << std::endl;
+    fin.close();
 }
